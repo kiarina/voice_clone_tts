@@ -21,6 +21,11 @@
 - 声をまねる道具なので、README と API の説明に「声の持ち主の同意がある声だけ使う」を書く。同意の確認はアプリの責任
 - 認証値・録音・個人の声・個人環境のパスやマシン名を公開物に混ぜない。例題とテストの音声は共有素材（`kiarina/test-assets`）だけ
 
+## build
+
+- `git clone --recurse-submodules`（qwentts.cpp の中の ggml も submodule）。build は Flutter の build hook（`hook/build.dart`）が CMake で行う
+- 本物のエンジンの通しは `VCT_REAL=1 VCT_CACHE=<重みの置き場所> VCT_REFERENCE=<24 kHz 16 bit mono の WAV> flutter test test/real_test.dart`
+
 ## 検証
 
 - `flutter analyze` と `flutter test`

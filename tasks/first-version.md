@@ -5,15 +5,16 @@ kiapi 互換の口（`packages/voice_clone_tts_server`）で Spirits Garden の�
 
 ## やること
 
-- [ ] Dart の API を決める（オーナーに案を見せる）。qwentts.cpp の `qwen.h`（`qt_init`・`qt_extract_voice_ref`・`qt_synthesize`・流しの callback・取り消しの callback）に合わせる
-- [ ] build: qwentts.cpp を `QWEN_SHARED=ON` の共有ライブラリにし、ggml は静的にリンクして閉じる（`docs/concepts/architecture.md` の「ggml の二重」）。
-  macOS は Metal、Windows は CUDA（CUDA Toolkit が要る。利用者の PC には CUDA の実行時の DLL を同梱するか、無ければ「使えない」と返す）
-- [ ] 重みの取得（Hugging Face `Serveurperso/Qwen3-TTS-GGUF` の `qwen-talker-1.7b-base-BF16.gguf`・`qwen-tokenizer-12hz-F32.gguf`、revision `b7ee2e8c7459c3bea99da23e3d178125a7d1713c`、hash を固定）と進み具合の通知
+- [x] Dart の API（2026-10-23、オーナーと合意。`docs/concepts/architecture.md` の「Dart の API」）
+- [x] build: build hook（`hook/build.dart`）で qwentts.cpp の project に `src/vct.cmake` を差し込み、1 つの共有ライブラリにする（ggml は静的）。Mac（Metal）で確かめた
+- [ ] Windows（CUDA）の build と実機。hook は Visual Studio 2022 と CUDA Toolkit を前提にし、cudart・cuBLAS の DLL を bundle する（未確認）
+- [x] 重みの取得（revision と SHA-256 を固定、`.part` から再開、`.ok` の印）。実際の download は通していない（Mac は Hugging Face のキャッシュから置いた）
 - [ ] 例題アプリ（共有素材の話者 1 で 1 文を話す）と、labs と同じ入力で速さを確かめる道具（`tool/`）
-- [ ] 取り消しの速さを測る（C の ABI の取り消しで、次の返事の最初の音まで）
+- [x] Mac で通した（2026-10-23、`test/real_test.dart`、Apple M1 Max）: 読み込み 1.6 秒、声の登録 1.2 秒（初回の準備込み）、`speak` の最初の音 85〜94 ms・実時間の 0.50〜0.54 倍、
+  `utter` で 3 区間、**取り消しは 10 ms で止まり次の返事の最初の音まで 96 ms**（HTTP のサーバーの 0.7 秒から縮んだ）
 - [ ] `packages/voice_clone_tts_server`: 声の登録・`POST /v1/audio/speech`（pcm）・版 2 の WebSocket（受け取った文字を区間に分けて、区間ごとに生成）
 - [ ] Spirits Garden の試作の body を Mac と Windows でこの口につなぎ、オーナーに聞いてもらう
-- [ ] flutter create の雛形のサンプル（`sum`）を消す
+- [x] 雛形のサンプルを消した（plugin の形をやめ、build hook の package にした）
 
 ## 申し送り
 

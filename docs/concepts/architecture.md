@@ -25,6 +25,29 @@ packages/voice_clone_tts_server（Dart）
   区間ごとに 1 回生成して 1 つの発話としてつなぐ。qwentts.cpp には文を少しずつ足しながら生成する口が無いが、区間ごとの生成で今の通話と同じ体験になると確かめた
 - **呼び出し側の責任**: 再生（最初の音から 1 秒待つなど）、エコー除去、声の持ち主の同意
 
+## Dart の API（2026-10-23、オーナーと合意）
+
+正典は `lib/src/types.dart`（型）と `lib/src/engine.dart`（`VoiceCloneTts`・`Speech`・`Utterance`）。
+
+- `VoiceCloneTts.support()`: `supported`・`engine`・`device`（`MTL0`・`CUDA0`）・`modelState`・`reason` を別々に返す。落とさない・読み込まない
+- `VoiceCloneTts.open()`: 無ければ重みを落とし（revision と SHA-256 を固定、`.part` から再開）、読み込み、暖機する（`PreparePhase` の download / load / warmup）
+- `createVoice(reference: Pcm16, transcript:)` → `Voice`（話者の埋め込み・参照の符号・文字起こし）。`toBytes()`／`loadVoice()` で保存して登録し直さない。参照の音声は持たない
+- `speak(text, voice:, language:, sampling:)` → `Speech`（`pcm`: `Stream<Int16List>`、24 kHz・mono。`done`、`cancel()`）
+- `utter(voice:, language:, rule:)` → `Utterance`（`append`・`close`・`cancel`・`pcm`・`done`）。区切りの規則 `SpanRule` で区間に分け、区間ごとに `speak` して順につなぐ
+- `VoiceCloneModel`: 既定は 1.7B BF16。1.7B Q8_0・0.6B Q8_0 も選べる
+- `language` は BCP 47（`ja`・`en`）で受け、qwentts.cpp の名前（`japanese`）に変える。省けば自動
+
+決めた 4 点（オーナー、2026-10-23）: PCM は `Int16List`・24 kHz（48 kHz への変換はアプリ）、通話用の `utter` をこの package に入れる、声は埋め込みと符号を `toBytes()` で保存する、重みは 1.7B BF16 を既定に Q8_0 と 0.6B も選べる。
+
+## build
+
+- Flutter の build hook（native assets、`hook/build.dart`）で、qwentts.cpp の CMake の project をそのまま構成し、`src/vct.cmake` を `CMAKE_PROJECT_qwentts-ggml_INCLUDE` で差し込んで
+  `voice_clone_tts` の共有ライブラリ（`src/vct.cpp`＋qwen-core＋静的な ggml）を作る。Mac は Metal（シェーダーは埋め込み）、Windows は CUDA Toolkit があれば CUDA で、
+  使う CUDA の実行時の DLL（cudart・cuBLAS）も一緒に bundle する。Dart は `@Native` でこのライブラリ（code asset `src/native.dart`）を呼ぶ
+- qwentts.cpp は CMake の中で `CMAKE_SOURCE_DIR` を前提にしているので、`add_subdirectory` で取り込まず、その project に差し込む
+- 入れ子の submodule（qwentts.cpp の中の ggml）が要る。clone は `--recurse-submodules`
+- `src/vct.cpp` は qwentts.cpp の流しの callback（中のスレッドから呼ばれる）を受け、PCM を 16 bit にコピーして `NativeCallable.listener` に渡す。取り消しは要求ごとの atomic の旗を cancel の callback が見る
+
 ## なぜこの形か
 
 - ONNX Runtime は、Mac では CPU でしか動かず（CoreML の EP は talker と code predictor を受け付けない）、1.7B は実時間の 3.6 倍以上かかった（labs `2026/10/23/qwen3-tts-onnx-runtime-compare`）
