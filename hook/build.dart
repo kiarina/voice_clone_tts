@@ -137,8 +137,6 @@ Future<String> _findCmake() async {
   ], runInShell: Platform.isWindows);
   if (probe.exitCode == 0) return 'cmake';
   if (Platform.isWindows) {
-    final programData =
-        Platform.environment['PROGRAMDATA'] ?? r'C:\ProgramData';
     final vswhere = File(
       r'C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe',
     );
@@ -156,16 +154,10 @@ Future<String> _findCmake() async {
       );
       if (root.isNotEmpty && cmake.existsSync()) return cmake.path;
     }
-    programData
-        .length; // PROGRAMDATA is what lets vswhere find the installations
-  }
-  throw StateError(
-    'cmake not found: install CMake or set hooks.user_defines.voice_clone_tts.cmake',
-  );
 }
 
 Future<void> _run(String exe, List<String> args) async {
-  final result = await Process.run(exe, args, runInShell: Platform.isWindows);
+  final result = await Process.run(exe, args); // no shell: paths with spaces (Program Files) stay one argument
   if (result.exitCode != 0) {
     throw ProcessException(
       exe,
