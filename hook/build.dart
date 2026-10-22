@@ -2,9 +2,12 @@
 // statically. macOS: Metal (shaders embedded). Windows: CUDA when the CUDA Toolkit is installed, otherwise CPU only, and
 // the CUDA runtime DLLs it needs are bundled next to it.
 //
-// Environment (optional, for the developer building the app):
-//   VCT_CUDA_ARCHITECTURES  CMAKE_CUDA_ARCHITECTURES for Windows (default: qwentts.cpp's list; e.g. "86-real" builds faster)
-//   VCT_CMAKE               path to cmake (default: cmake on PATH)
+// Hooks see only a few environment variables (PATH, PROGRAMDATA, ...), so the settings come from the app's pubspec:
+//   hooks:
+//     user_defines:
+//       voice_clone_tts:
+//         cuda_architectures: "86-real"   # CMAKE_CUDA_ARCHITECTURES (default: qwentts.cpp's list, slow to build)
+//         cmake: C:\path\to\cmake.exe   # default: cmake on PATH, else the one bundled with Visual Studio (vswhere)
 
 import 'dart:io';
 
@@ -29,7 +32,7 @@ void main(List<String> args) async {
       input.outputDirectoryShared.resolve('cmake-${os.name}-$arch/'),
     );
     await buildDir.create(recursive: true);
-    final cmake = Platform.environment['VCT_CMAKE'] ?? 'cmake';
+    final cmake = input.userDefines['cmake'] as String? ?? await _findCmake();
 
     final configure = <String>[
       '-S',
@@ -54,7 +57,7 @@ void main(List<String> args) async {
       configure.addAll(['-G', 'Visual Studio 17 2022', '-A', 'x64']);
       if (cuda != null) {
         configure.add('-DGGML_CUDA=ON');
-        final archs = Platform.environment['VCT_CUDA_ARCHITECTURES'];
+        final archs = input.userDefines['cuda_architectures'] as String?;
         if (archs != null) configure.add('-DCMAKE_CUDA_ARCHITECTURES=$archs');
       }
     }
@@ -104,8 +107,6 @@ void main(List<String> args) async {
 }
 
 String? _cudaRoot() {
-  final env = Platform.environment['CUDA_PATH'];
-  if (env != null && Directory(env).existsSync()) return env;
   final base = Directory(r'C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA');
   if (!base.existsSync()) return null;
   final versions = base.listSync().whereType<Directory>().toList()
@@ -127,6 +128,40 @@ Iterable<File> _cudaRuntimeDlls(String cudaRoot) sync* {
         yield f;
     }
   }
+}
+
+/// cmake on PATH, else the one bundled with Visual Studio (found with vswhere).
+Future<String> _findCmake() async {
+  final probe = await Process.run(Platform.isWindows ? 'where' : 'which', [
+    'cmake',
+  ], runInShell: Platform.isWindows);
+  if (probe.exitCode == 0) return 'cmake';
+  if (Platform.isWindows) {
+    final programData =
+        Platform.environment['PROGRAMDATA'] ?? r'C:\ProgramData';
+    final vswhere = File(
+      r'C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe',
+    );
+    if (vswhere.existsSync()) {
+      final r = await Process.run(vswhere.path, [
+        '-latest',
+        '-products',
+        '*',
+        '-property',
+        'installationPath',
+      ]);
+      final root = (r.stdout as String).trim();
+      final cmake = File(
+        '$root\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin\\cmake.exe',
+      );
+      if (root.isNotEmpty && cmake.existsSync()) return cmake.path;
+    }
+    programData
+        .length; // PROGRAMDATA is what lets vswhere find the installations
+  }
+  throw StateError(
+    'cmake not found: install CMake or set hooks.user_defines.voice_clone_tts.cmake',
+  );
 }
 
 Future<void> _run(String exe, List<String> args) async {
