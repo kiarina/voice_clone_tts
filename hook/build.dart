@@ -7,7 +7,7 @@
 //     user_defines:
 //       voice_clone_tts:
 //         cuda_architectures: "86-real"   # CMAKE_CUDA_ARCHITECTURES (default: qwentts.cpp's list, slow to build)
-//         cmake: C:\path\to\cmake.exe   # default: cmake on PATH, else the one bundled with Visual Studio (vswhere)
+//         cmake: /path/to/cmake            # default: cmake on PATH (on Windows, the one in Visual Studio's developer environment)
 
 import 'dart:io';
 
@@ -32,7 +32,6 @@ void main(List<String> args) async {
       input.outputDirectoryShared.resolve('cmake-${os.name}-$arch/'),
     );
     await buildDir.create(recursive: true);
-    final cmake = input.userDefines['cmake'] as String? ?? await _findCmake();
 
     final configure = <String>[
       '-S',
@@ -45,6 +44,15 @@ void main(List<String> args) async {
       '-DVCT_SOURCE_DIR=${vct.toFilePath()}',
       '-DGGML_NATIVE=OFF',
     ];
+    final buildArgs = [
+      '--build',
+      buildDir.path,
+      '--config',
+      'Release',
+      '--target',
+      'voice_clone_tts',
+      '--parallel',
+    ];
     final cuda = os == OS.windows ? _cudaRoot() : null;
     if (os == OS.macOS) {
       configure.addAll([
@@ -53,28 +61,37 @@ void main(List<String> args) async {
         '-DCMAKE_OSX_ARCHITECTURES=${arch == 'arm64' ? 'arm64' : 'x86_64'}',
         '-DCMAKE_OSX_DEPLOYMENT_TARGET=${code.macOS.targetVersion}',
       ]);
+      final cmake = input.userDefines['cmake'] as String? ?? 'cmake';
+      await _run(cmake, configure);
+      await _run(cmake, buildArgs);
     } else {
-      configure.addAll(['-G', 'Visual Studio 17 2022', '-A', 'x64']);
+      // Ninja inside the Visual Studio developer environment (vcvars64): the Visual Studio generator's CUDA
+      // integration did not find the compiler, while Ninja + vcvars builds CUDA as qwentts.cpp's own scripts do.
+      configure.addAll(['-G', 'Ninja']);
       if (cuda != null) {
         configure.add('-DGGML_CUDA=ON');
         final archs = input.userDefines['cuda_architectures'] as String?;
         if (archs != null) configure.add('-DCMAKE_CUDA_ARCHITECTURES=$archs');
       }
+      final vs = await _visualStudio();
+      final cmake = input.userDefines['cmake'] as String? ?? 'cmake';
+      // A trailing backslash would escape the closing quote: double it.
+      String quote(String a) => '"${a.endsWith('\\') ? '$a\\' : a}"';
+      final script = File('${buildDir.path}build.cmd');
+      await script.writeAsString(
+        [
+          '@echo off',
+          'call ${quote('$vs\\VC\\Auxiliary\\Build\\vcvars64.bat')} >nul || exit /b 1',
+          '${quote(cmake)} ${configure.map(quote).join(' ')} || exit /b 1',
+          '${quote(cmake)} ${buildArgs.map(quote).join(' ')} || exit /b 1',
+        ].join('\r\n'),
+      );
+      await _run('cmd', ['/c', script.path]);
     }
-    await _run(cmake, configure);
-    await _run(cmake, [
-      '--build',
-      buildDir.path,
-      '--config',
-      'Release',
-      '--target',
-      'voice_clone_tts',
-      '--parallel',
-    ]);
 
     final library = os == OS.macOS
         ? File('${buildDir.path}/libvoice_clone_tts.dylib')
-        : File('${buildDir.path}/Release/voice_clone_tts.dll');
+        : File('${buildDir.path}voice_clone_tts.dll');
     if (!library.existsSync())
       throw StateError('CMake did not produce ${library.path}');
     output.assets.code.add(
@@ -130,33 +147,24 @@ Iterable<File> _cudaRuntimeDlls(String cudaRoot) sync* {
   }
 }
 
-/// cmake on PATH, else the one bundled with Visual Studio (found with vswhere).
-Future<String> _findCmake() async {
-  final probe = await Process.run(Platform.isWindows ? 'where' : 'which', [
-    'cmake',
-  ], runInShell: Platform.isWindows);
-  if (probe.exitCode == 0) return 'cmake';
-  if (Platform.isWindows) {
-    final vswhere = File(
-      r'C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe',
-    );
-    if (vswhere.existsSync()) {
-      final r = await Process.run(vswhere.path, [
-        '-latest',
-        '-products',
-        '*',
-        '-property',
-        'installationPath',
-      ]);
-      final root = (r.stdout as String).trim();
-      final cmake = File(
-        '$root\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin\\cmake.exe',
-      );
-      if (root.isNotEmpty && cmake.existsSync()) return cmake.path;
-    }
+/// The latest Visual Studio installation (vswhere), whose developer environment provides cl, cmake and ninja.
+Future<String> _visualStudio() async {
+  final vswhere = File(
+    r'C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe',
+  );
+  if (vswhere.existsSync()) {
+    final r = await Process.run(vswhere.path, [
+      '-latest',
+      '-products',
+      '*',
+      '-property',
+      'installationPath',
+    ]);
+    final root = (r.stdout as String).trim();
+    if (root.isNotEmpty) return root;
   }
   throw StateError(
-    'cmake not found: install CMake or set hooks.user_defines.voice_clone_tts.cmake',
+    'Visual Studio (with C++) not found; it is needed to build voice_clone_tts on Windows',
   );
 }
 
