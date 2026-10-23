@@ -19,7 +19,7 @@ README の手順で他の人が使える。Spirits Garden の試作に組み込�
 - [x] 既定の CUDA の世代は qwentts.cpp の一覧のまま（CUDA 13 では RTX 20 系〜50 系）にし、アプリが `cuda_architectures` で絞る（README）。例題の release の build は Core i9-12900K で約 13.5 分（2026-10-23）
 - [x] macOS の共有ライブラリが外に出す記号を `vct_*` の 9 個に絞った（`src/vct.cmake` の `-exported_symbol`、2026-10-23。前は約 1,500）
 - [x] `flutter analyze` の残り（2026-10-23、`dart fix`）
-- [ ] pub.dev に 0.1.0 を出す（`dart pub publish --dry-run` は通る。警告は gitignore で外れる qwentts.cpp の例題・試験の記録の 1 つだけで、build には要らない。圧縮で 4 MB）。出す前に名前・版・中身をオーナーに見せる
+- [ ] pub.dev に 0.1.0 を出す（**保留**: 2026-10-23 にオーナーが「まだ出さない」と決めた。出すかどうか・いつ出すかはオーナーが決める。`dart pub publish --dry-run` は通る。警告は gitignore で外れる qwentts.cpp の例題・試験の記録の 1 つだけで、build には要らない。圧縮で 4 MB）。出す前に名前・版・中身をオーナーに見せる
 - [ ] NVIDIA の GPU の無い Windows の PC で `support()` が使えないと答えるか（そういう PC が手元に無い。`nvcuda.dll` が無いと共有ライブラリが読めず「native library unavailable」になる見込み）
 
 ## 申し送り
