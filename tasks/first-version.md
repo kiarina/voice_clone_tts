@@ -16,7 +16,7 @@ README の手順で他の人が使える。Spirits Garden の試作に組み込�
 - [ ] Windows の配布の大きさ: `cublasLt64_13.dll` だけで 490 MB。cudart を外す、重みと同じく後から取るなどを考える
 - [ ] 重みの実際の download（Hugging Face から 4.5 GB、`.part` からの再開、SHA-256 の不一致で消す）。Mac・Windows とも Hugging Face のキャッシュから置いて済ませた
 - [ ] 例題アプリ（`example/`）を Mac と Windows で動かす。参照の WAV と文字起こしを選んで話す。今は `--dart-define` で渡す仮の画面
-- [ ] 配る GPU の世代（`cuda_architectures`）を決める。既定は qwentts.cpp の広い一覧で、build が長い
+- [ ] 配る GPU の世代（`cuda_architectures`）を決める。既定は qwentts.cpp の広い一覧で、build が長い（この repo の `flutter test` を既定の一覧で build すると、Core i9-12900K で約 40 分。`86-real` だけなら数分）
 - [ ] macOS の共有ライブラリが ggml の記号を外に出している（`nm -gU` で約 1,500）。macOS は 2 段の名前空間で他の ggml とはぶつからないが、出すのを `vct_*` だけに絞る（`-exported_symbols_list`）か決める
 - [ ] `flutter analyze` の残りの info（if の波括弧など）
 
