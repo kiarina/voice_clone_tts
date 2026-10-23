@@ -154,10 +154,17 @@ Future<String> _findCmake() async {
       );
       if (root.isNotEmpty && cmake.existsSync()) return cmake.path;
     }
+  }
+  throw StateError(
+    'cmake not found: install CMake or set hooks.user_defines.voice_clone_tts.cmake',
+  );
 }
 
 Future<void> _run(String exe, List<String> args) async {
-  final result = await Process.run(exe, args); // no shell: paths with spaces (Program Files) stay one argument
+  final result = await Process.run(
+    exe,
+    args,
+  ); // no shell: paths with spaces (Program Files) stay one argument
   if (result.exitCode != 0) {
     throw ProcessException(
       exe,
