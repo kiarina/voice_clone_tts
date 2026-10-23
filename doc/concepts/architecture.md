@@ -62,6 +62,7 @@ GPU の無い body にも声を配る（Spirits Garden の `tasks/`）。kiapi �
 
 - **ggml の二重**: 同じアプリが別の plugin で ggml（whisper.cpp など。例: pcm_asr の Windows）を build すると、CMake の target と DLL の名前（`ggml.dll`）がぶつかる。
   この package は qwentts.cpp と ggml を 1 つの共有ライブラリ（`voice_clone_tts`）に静的に閉じ、`vct_*` だけを出す。whisper.cpp（ggml）を build する別の plugin と同じアプリに入れても、Windows の build と起動でぶつからなかった（2026-10-23。両方で同時に推論したときは未確認）
+- **同梱物を減らす版に上げるとき**: hook が出す code asset を減らすと、Flutter（3.47.2）は写す元のファイルを消そうとして失敗する（Windows で cudart を外したとき。権限が無ければ build が失敗するだけ）。使う側は `flutter clean` してから build する
 - **割り込みの速さ**: C の ABI の取り消し（1 フレームごとに確かめる）を直接使い、止まるまで Mac 10 ms・Windows 5 ms、次の返事の最初の音まで Mac 96 ms・Windows 32 ms
   （HTTP のサーバーで接続を切る形は Mac 0.7 秒・Windows 0.25 秒だった。サーバーが切断に気づくまで数フレーム余分に作るため）
 - **声ごとの初回の準備**: qwentts.cpp は声の参照の符号で流しの復号器を温め、その状態を声ごとに覚える。初回は Mac で約 0.5 秒かかるので、`createVoice` と `primeVoice` で前もって済ませる
