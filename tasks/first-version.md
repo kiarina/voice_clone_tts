@@ -30,4 +30,4 @@ README の手順で他の人が使える。Spirits Garden の試作に組み込�
 - 実測の来歴は labs の 3 つの lab（`AGENTS.md`）。qwentts.cpp の commit は `5916bf7c79dbb4e66fc059cdc507a79a23a28bb4`（2026-10-16）
 - **hook が出す同梱物を減らすと、Flutter（3.47.2）は前回アプリに写したファイルでなく、写す元のファイルを消そうとする**（2026-10-23、cudart を外した後の例題の Windows の build。`Flutter failed to delete file at "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\bin\x64\cudart64_13.dll"`）。
   権限が無くて消せず build が失敗した。`flutter clean` で直る。管理者の権限で build すると CUDA Toolkit の DLL が消えるおそれがある。上流への報告はオーナーと決める
-- G-GEAR の checkout は、build で生まれた `example/pubspec.lock` の書き換えと生成物（`generated_plugin_registrant` など）で `git pull` が止まることがある。生成物なので戻して・消して pull する
+- Windows の開発機の checkout は、build で生まれた `example/pubspec.lock` の書き換えと生成物（`generated_plugin_registrant` など）で `git pull` が止まることがある。生成物なので戻して・消して pull する
