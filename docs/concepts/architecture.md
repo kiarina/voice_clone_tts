@@ -42,7 +42,7 @@ GPU の無い body にも声を配る（Spirits Garden の `tasks/`）。kiapi �
 
 - Flutter の build hook（native assets、`hook/build.dart`）で、qwentts.cpp の CMake の project をそのまま構成し、`src/vct.cmake` を `CMAKE_PROJECT_qwentts-ggml_INCLUDE` で差し込んで
   `voice_clone_tts` の共有ライブラリ（`src/vct.cpp`＋qwen-core＋静的な ggml）を作る。Mac は Metal（シェーダーは埋め込み）、Windows は CUDA Toolkit があれば CUDA で、
-  使う CUDA の実行時の DLL（cudart・cuBLAS）も一緒に bundle する。Dart は `@Native` でこのライブラリ（code asset `src/native.dart`）を呼ぶ
+  使う CUDA の実行時の DLL（cudart・cuBLAS）も一緒に bundle する（実際に読まれるのは cuBLAS の 2 つ。cudart は ggml に静的に入る。PATH に CUDA の無い状態で、exe の隣の cuBLAS で CUDA が開くことを確かめた。2026-10-23）。Dart は `@Native` でこのライブラリ（code asset `src/native.dart`）を呼ぶ
 - qwentts.cpp は CMake の中で `CMAKE_SOURCE_DIR` を前提にしているので、`add_subdirectory` で取り込まず、その project に差し込む
 - Windows は Visual Studio の開発者環境（vswhere で探した vcvars64）の中で Ninja を使う。Visual Studio の生成方式では CMake が CUDA のコンパイラを見つけられなかった。
   hook には PATH などわずかな環境変数しか渡らないので、CUDA の世代（`cuda_architectures`）と cmake の場所はアプリの pubspec の `hooks.user_defines.voice_clone_tts` で渡す。CMake に渡すパスは前向きの斜線にする（円記号はエスケープとして読まれる）
@@ -61,7 +61,7 @@ GPU の無い body にも声を配る（Spirits Garden の `tasks/`）。kiapi �
 ## 気をつけること
 
 - **ggml の二重**: 同じアプリが別の plugin で ggml（whisper.cpp など。例: pcm_asr の Windows）を build すると、CMake の target と DLL の名前（`ggml.dll`）がぶつかる。
-  qwentts.cpp は独立した build（ExternalProject など）で 1 つの共有ライブラリに閉じ、ggml は静的にリンクして `qt_*` だけを出す（`QWEN_SHARED=ON`）
+  この package は qwentts.cpp と ggml を 1 つの共有ライブラリ（`voice_clone_tts`）に静的に閉じ、`vct_*` だけを出す。whisper.cpp（ggml）を build する別の plugin と同じアプリに入れても、Windows の build と起動でぶつからなかった（2026-10-23。両方で同時に推論したときは未確認）
 - **割り込みの速さ**: C の ABI の取り消し（1 フレームごとに確かめる）を直接使い、止まるまで Mac 10 ms・Windows 5 ms、次の返事の最初の音まで Mac 96 ms・Windows 32 ms
   （HTTP のサーバーで接続を切る形は Mac 0.7 秒・Windows 0.25 秒だった。サーバーが切断に気づくまで数フレーム余分に作るため）
 - **声ごとの初回の準備**: qwentts.cpp は声の参照の符号で流しの復号器を温め、その状態を声ごとに覚える。初回は Mac で約 0.5 秒かかるので、`createVoice` と `primeVoice` で前もって済ませる
