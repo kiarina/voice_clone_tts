@@ -110,7 +110,7 @@ void main() {
       final next = tts.speak('はい、どうしましたか？', voice: voice, language: 'ja');
       await next.pcm.first;
       print(
-        'cancel: stopped ${stopped} ms after cancel(), next first audio ${stopwatch.elapsedMilliseconds} ms after cancel()',
+        'cancel: stopped $stopped ms after cancel(), next first audio ${stopwatch.elapsedMilliseconds} ms after cancel()',
       );
       expect(cancelled.cancelled, isTrue);
       await next.done;

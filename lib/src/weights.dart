@@ -74,8 +74,9 @@ class WeightStore {
       }
       if (have < w.bytes) {
         final request = await client.getUrl(w.url);
-        if (have > 0)
+        if (have > 0) {
           request.headers.set(HttpHeaders.rangeHeader, 'bytes=$have-');
+        }
         final response = await request.close();
         if (response.statusCode == HttpStatus.ok) {
           have = 0; // the server ignored the range

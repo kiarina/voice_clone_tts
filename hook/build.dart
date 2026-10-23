@@ -1,6 +1,6 @@
 // Builds the native library with CMake: qwentts.cpp's own project plus src/vct.cpp (src/vct.cmake), ggml linked
 // statically. macOS: Metal (shaders embedded). Windows: CUDA when the CUDA Toolkit is installed, otherwise CPU only, and
-// the CUDA runtime DLLs it needs are bundled next to it.
+// the cuBLAS DLLs it loads are bundled next to it.
 //
 // Hooks see only a few environment variables (PATH, PROGRAMDATA, ...), so the settings come from the app's pubspec:
 //   hooks:
@@ -22,8 +22,9 @@ void main(List<String> args) async {
     if (!input.config.buildCodeAssets) return;
     final code = input.config.code;
     final os = code.targetOS;
-    if (os != OS.macOS && os != OS.windows)
+    if (os != OS.macOS && os != OS.windows) {
       return; // other platforms: the Dart side reports "unsupported"
+    }
 
     final root = input.packageRoot;
     final source = root.resolve('third_party/qwentts.cpp/');
@@ -102,8 +103,9 @@ void main(List<String> args) async {
     final library = os == OS.macOS
         ? File('${buildDir.path}/libvoice_clone_tts.dylib')
         : File('${buildDir.path}voice_clone_tts.dll');
-    if (!library.existsSync())
+    if (!library.existsSync()) {
       throw StateError('CMake did not produce ${library.path}');
+    }
     output.assets.code.add(
       CodeAsset(
         package: input.packageName,
@@ -113,7 +115,7 @@ void main(List<String> args) async {
       ),
     );
     if (cuda != null) {
-      // ggml-cuda links the CUDA runtime and cuBLAS dynamically: bundle the DLLs it loads.
+      // ggml-cuda loads cuBLAS dynamically: bundle its DLLs.
       for (final dll in _cudaRuntimeDlls(cuda)) {
         output.assets.code.add(
           CodeAsset(
@@ -149,10 +151,11 @@ Iterable<File> _cudaRuntimeDlls(String cudaRoot) sync* {
     if (!dir.existsSync()) continue;
     for (final f in dir.listSync().whereType<File>()) {
       final name = f.uri.pathSegments.last.toLowerCase();
-      if (name.startsWith('cudart64_') ||
-          name.startsWith('cublas64_') ||
-          name.startsWith('cublaslt64_'))
+      // cudart is linked into ggml statically; only cuBLAS is loaded at run time.
+      if (name.startsWith('cublas64_') ||
+          name.startsWith('cublaslt64_')) {
         yield f;
+      }
     }
   }
 }

@@ -230,8 +230,9 @@ class VoiceCloneTts {
   }
 
   void _checkOpen() {
-    if (_closed)
+    if (_closed) {
       throw const VoiceCloneException(VoiceCloneErrorCode.closed, 'closed');
+    }
   }
 
   /// Runs one tiny synthesis so the first real request does not pay the GPU kernel set-up (about 1 s on Metal).
@@ -529,8 +530,9 @@ int spanEnd(String text, String? language, bool closed, SpanRule rule) {
   }
   if (spaced) {
     final spaces = RegExp(r'\s+').allMatches(text).toList();
-    if (spaces.length >= rule.maximumWordsSpaced)
+    if (spaces.length >= rule.maximumWordsSpaced) {
       return spaces[rule.maximumWordsSpaced - 1].end;
+    }
   } else if (text.length >= rule.maximumCharacters) {
     return rule.maximumCharacters;
   }
@@ -539,8 +541,9 @@ int spanEnd(String text, String? language, bool closed, SpanRule rule) {
 
 bool _isUnspaced(String? language, String text) {
   final tag = language?.toLowerCase().split(RegExp('[-_]')).first;
-  if (tag != null)
+  if (tag != null) {
     return tag == 'ja' || tag == 'zh' || tag == 'japanese' || tag == 'chinese';
+  }
   return RegExp(r'[぀-ヿ一-鿿]').hasMatch(text);
 }
 

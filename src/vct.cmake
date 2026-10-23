@@ -13,4 +13,8 @@ function(_vct_add_library)
         CXX_VISIBILITY_PRESET hidden
         VISIBILITY_INLINES_HIDDEN ON
     )
+    # The static ggml keeps its default visibility: on macOS export vct_* alone, so another ggml in the app stays apart.
+    if(APPLE)
+        target_link_options(voice_clone_tts PRIVATE "LINKER:-exported_symbol,_vct_*")
+    endif()
 endfunction()
