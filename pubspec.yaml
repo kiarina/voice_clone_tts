@@ -1,7 +1,6 @@
 name: voice_clone_tts
 description: "Voice cloning text-to-speech for Flutter: Qwen3-TTS through qwentts.cpp (ggml), Metal on macOS and CUDA on Windows."
-version: 0.0.1
-publish_to: none
+version: 0.1.0
 repository: https://github.com/kiarina/voice_clone_tts
 issue_tracker: https://github.com/kiarina/voice_clone_tts/issues
 

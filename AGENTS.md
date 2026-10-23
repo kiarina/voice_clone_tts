@@ -5,7 +5,7 @@
 ## 作業前に読むもの
 
 - `README.md`（公開向けの説明）
-- `docs/concepts/architecture.md`（作りと決まりの正典。なぜこの形かも）
+- `doc/concepts/architecture.md`（作りと決まりの正典。なぜこの形かも）
 - `tasks/`（残っている作業。1 タスク 1 ファイル）
 - `CHANGELOG.md`
 

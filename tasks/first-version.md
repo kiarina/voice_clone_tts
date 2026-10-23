@@ -5,7 +5,7 @@ README の手順で他の人が使える。Spirits Garden の試作に組み込�
 
 ## 済んだこと（2026-10-23）
 
-- Dart の API（オーナーと合意。`docs/concepts/architecture.md`）と、build hook による native の build（Mac は Metal、Windows は Ninja＋CUDA）
+- Dart の API（オーナーと合意。`doc/concepts/architecture.md`）と、build hook による native の build（Mac は Metal、Windows は Ninja＋CUDA）
 - 本物のエンジンの通し（`test/real_test.dart`）: Mac（M1 Max）は `speak` の最初の音 85〜94 ms・実時間の 0.5 倍、取り消し 10 ms・次の返事 96 ms。
   Windows（RTX 3080 Ti）は 26〜32 ms・0.18 倍、取り消し 5 ms・次の返事 32 ms。`utter` は両方で 3 区間に分かれて順に出た
 
