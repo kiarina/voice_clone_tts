@@ -1,24 +1,26 @@
-# 最初の版（Mac と Windows で、Spirits Garden の試作から使える）
+# 最初の版を仕上げる（Mac と Windows の利用者の PC で動く）
 
-完了条件: Mac（Metal）と Windows（CUDA）で、声の登録・文を渡して PCM を流して受け取る・止める が Dart から使え、
-kiapi 互換の口（`packages/voice_clone_tts_server`）で Spirits Garden の試作の body が `speak` と通話の clone に使えて、オーナーが声を聞いて確かめた。
+完了条件: GPU のある Mac と Windows の PC で、重みを実際に落とすところから `speak`・`utter`・取り消しまで動き、Windows は CUDA の PATH が無い PC でもアプリとして起動して、
+README の手順で他の人が使える。Spirits Garden の試作に組み込むのは Spirits Garden の `tasks/`（この package を使う側）。
 
-## やること
+## 済んだこと（2026-10-23）
 
-- [x] Dart の API（2026-10-23、オーナーと合意。`docs/concepts/architecture.md` の「Dart の API」）
-- [x] build: build hook（`hook/build.dart`）で qwentts.cpp の project に `src/vct.cmake` を差し込み、1 つの共有ライブラリにする（ggml は静的）。Mac（Metal）で確かめた
-- [x] Windows（CUDA）で通した（2026-10-23、RTX 3080 Ti、CUDA Toolkit 13.4、`cuda_architectures: 86-real`）: 読み込み 4.5 秒、声の登録 0.4 秒、`speak` の最初の音 26〜32 ms・実時間の 0.18〜0.19 倍、
-  `utter` で 3 区間、取り消しは 5 ms で止まり次の返事の最初の音まで 32 ms。hook は Visual Studio の開発者環境（vcvars64）の中で Ninja を使う（Visual Studio の生成方式では CUDA のコンパイラが見つからなかった）
-- [ ] Windows の配布: cudart・cuBLAS の DLL を code asset として bundle するが、`flutter test` は CUDA の PATH がある状態で通しただけ。アプリとして PATH の無い PC で起動できるかを確かめる
-- [x] 重みの取得（revision と SHA-256 を固定、`.part` から再開、`.ok` の印）。実際の download は通していない（Mac は Hugging Face のキャッシュから置いた）
-- [ ] 例題アプリ（共有素材の話者 1 で 1 文を話す）と、labs と同じ入力で速さを確かめる道具（`tool/`）
-- [x] Mac で通した（2026-10-23、`test/real_test.dart`、Apple M1 Max）: 読み込み 1.6 秒、声の登録 1.2 秒（初回の準備込み）、`speak` の最初の音 85〜94 ms・実時間の 0.50〜0.54 倍、
-  `utter` で 3 区間、**取り消しは 10 ms で止まり次の返事の最初の音まで 96 ms**（HTTP のサーバーの 0.7 秒から縮んだ）
-- [ ] `packages/voice_clone_tts_server`: 声の登録・`POST /v1/audio/speech`（pcm）・版 2 の WebSocket（受け取った文字を区間に分けて、区間ごとに生成）
-- [ ] Spirits Garden の試作の body を Mac と Windows でこの口につなぎ、オーナーに聞いてもらう
-- [x] 雛形のサンプルを消した（plugin の形をやめ、build hook の package にした）
+- Dart の API（オーナーと合意。`docs/concepts/architecture.md`）と、build hook による native の build（Mac は Metal、Windows は Ninja＋CUDA）
+- 本物のエンジンの通し（`test/real_test.dart`）: Mac（M1 Max）は `speak` の最初の音 85〜94 ms・実時間の 0.5 倍、取り消し 10 ms・次の返事 96 ms。
+  Windows（RTX 3080 Ti）は 26〜32 ms・0.18 倍、取り消し 5 ms・次の返事 32 ms。`utter` は両方で 3 区間に分かれて順に出た
+
+## 残り
+
+- [ ] Windows の配布: cudart・cuBLAS の DLL を code asset として bundle しているが、確かめたのは CUDA の PATH がある状態の `flutter test` だけ。例題アプリを release で build し、PATH の無い状態で起動して声が出るか
+- [ ] 重みの実際の download（Hugging Face から 4.5 GB、`.part` からの再開、SHA-256 の不一致で消す）。Mac・Windows とも Hugging Face のキャッシュから置いて済ませた
+- [ ] 例題アプリ（`example/`）を Mac と Windows で動かす。参照の WAV と文字起こしを選んで話す。今は `--dart-define` で渡す仮の画面
+- [ ] 配る GPU の世代（`cuda_architectures`）を決める。既定は qwentts.cpp の広い一覧で、build が長い
+- [ ] macOS の共有ライブラリが ggml の記号を外に出している（`nm -gU` で約 1,500）。macOS は 2 段の名前空間で他の ggml とはぶつからないが、出すのを `vct_*` だけに絞る（`-exported_symbols_list`）か決める
+- [ ] `flutter analyze` の残りの info（if の波括弧など）
 
 ## 申し送り
 
-- 実測の入力と手順は labs の 3 つの lab（`AGENTS.md`）。qwentts.cpp の commit は `5916bf7c79dbb4e66fc059cdc507a79a23a28bb4`（2026-10-16）
-- Windows の build は、Visual Studio 2022（C++）と CUDA Toolkit 13.4、`-DGGML_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES=86`（RTX 30 系）で通った。配るなら対象の GPU の世代を決める
+- 本物のエンジンの通し: `VCT_REAL=1 VCT_CACHE=<重みの置き場所> VCT_REFERENCE=<24 kHz 16 bit mono の WAV> flutter test test/real_test.dart`。重みの置き場所は `<cache>/<revision>/` に 2 つのファイルと、SHA-256 を書いた `.ok`
+- Windows で通すときは、アプリ（またはこの repo）の pubspec に `hooks: user_defines: voice_clone_tts: cuda_architectures: "86-real"` を置くと build が短い（RTX 30 系）。この repo には commit していない
+- build hook には PATH・PROGRAMDATA などわずかな環境変数しか渡らない。設定は `user_defines` で渡す（`hook/build.dart` の冒頭）
+- 実測の来歴は labs の 3 つの lab（`AGENTS.md`）。qwentts.cpp の commit は `5916bf7c79dbb4e66fc059cdc507a79a23a28bb4`（2026-10-16）

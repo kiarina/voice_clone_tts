@@ -13,15 +13,14 @@ Dart の API（voice_clone_tts）
         ├─ macOS:   ggml の Metal
         └─ Windows: ggml の CUDA（NVIDIA の GPU）
    ほかの OS・GPU の無い PC: 「使えない」と返す（アプリは OS の声などに戻す）
-
-packages/voice_clone_tts_server（Dart）
-  上の API の上に、kiapi の speech と同じ口を出す
-  POST /v1/audio/voices・POST /v1/audio/speech（pcm を流す）・流しの WebSocket（版 2）
 ```
+
+使う側は Spirits Garden の試作。まず GPU のある body がこの package を直接使い、次に TTS ノード（メッシュの参加者）として
+GPU の無い body にも声を配る（Spirits Garden の `tasks/`）。kiapi と同じ HTTP の口（サーバー）は作らない（オーナー、2026-10-23。最終形のノードでは使わない回り道。Spirits 以外から HTTP で使う需要が出たら考える）。
 
 - **モデル**: Qwen3-TTS 12Hz 1.7B Base、BF16（talker 3.88 GB ＋ codec 0.65 GB）。参照の符号と文字起こしで似せる（ICL）
 - **エンジン**: qwentts.cpp（MIT、C++17、ggml）。1 フレーム（80 ms）ずつ復号して流せ、取り消しは 1 フレームごとに確かめる
-- **流しの口（版 2）**: 受け取った文字を短い区間（日本語は 8 文字以上で句読点、無ければ 24 文字。英語は 14 文字以上で句読点、無ければ 6 語）に分け、
+- **文が少しずつ届く形（通話）**: `utter` が、受け取った文字を短い区間（日本語は 8 文字以上で句読点、無ければ 24 文字。英語は 14 文字以上で句読点、無ければ 6 語）に分け、
   区間ごとに 1 回生成して 1 つの発話としてつなぐ。qwentts.cpp には文を少しずつ足しながら生成する口が無いが、区間ごとの生成で今の通話と同じ体験になると確かめた
 - **呼び出し側の責任**: 再生（最初の音から 1 秒待つなど）、エコー除去、声の持ち主の同意
 
@@ -62,8 +61,9 @@ packages/voice_clone_tts_server（Dart）
 
 - **ggml の二重**: 同じアプリが別の plugin で ggml（whisper.cpp など。例: pcm_asr の Windows）を build すると、CMake の target と DLL の名前（`ggml.dll`）がぶつかる。
   qwentts.cpp は独立した build（ExternalProject など）で 1 つの共有ライブラリに閉じ、ggml は静的にリンクして `qt_*` だけを出す（`QWEN_SHARED=ON`）
-- **割り込みの速さ**: HTTP のサーバーで接続を切る形は、次の返事の最初の音まで Mac 0.7 秒・Windows 0.25 秒かかった（サーバーが切断に気づくまで数フレーム余分に作る）。
-  plugin では C の ABI の取り消しを直接使い、縮むかを確かめる
+- **割り込みの速さ**: C の ABI の取り消し（1 フレームごとに確かめる）を直接使い、止まるまで Mac 10 ms・Windows 5 ms、次の返事の最初の音まで Mac 96 ms・Windows 32 ms
+  （HTTP のサーバーで接続を切る形は Mac 0.7 秒・Windows 0.25 秒だった。サーバーが切断に気づくまで数フレーム余分に作るため）
+- **声ごとの初回の準備**: qwentts.cpp は声の参照の符号で流しの復号器を温め、その状態を声ごとに覚える。初回は Mac で約 0.5 秒かかるので、`createVoice` と `primeVoice` で前もって済ませる
 - 同時に話す本数は GPU のメモリで決まる。12 GB の RTX 3080 Ti で Q8_0 は 4 本まで実時間、8 本で崩れた。BF16 は測っていない
 - 乱数は Philox。同じ機械・同じ seed なら同じ音になる（Mac と Windows では同じにならない）
 
@@ -73,6 +73,7 @@ packages/voice_clone_tts_server（Dart）
 |---|---|---|
 | エンジンを qwentts.cpp 1 本にする | オーナー（2026-10-23） | Mac・Windows とも最速で、聞いて採用できる品質 |
 | 1.7B BF16 | オーナー（2026-10-23） | 可愛い声の参照で聞き比べて「いいね」。並列はそこまで求めない |
-| 区間ごとの生成で通話の口を作る | オーナー（2026-10-23） | つなぎ目を聞いて問題なし |
+| 区間ごとの生成で通話の形を作る（`utter`） | オーナー（2026-10-23） | つなぎ目を聞いて問題なし |
+| kiapi 互換のサーバーは作らない。Spirits の body が直接使い、次に TTS ノード | オーナー（2026-10-23） | サーバーは最終形で使わない回り道 |
 | 名前 `voice_clone_tts`、public | オーナー（2026-10-23） | できることで名付ける（エンジンを替えても嘘にならない）。兄弟の plugin と同じく public |
 | ggml を共有ライブラリに閉じる | エージェント | pcm_asr と同じアプリに入れたときの衝突を避ける |
