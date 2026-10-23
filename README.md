@@ -30,9 +30,13 @@ a WAV file.
 
 ## Getting started
 
+Not on pub.dev yet. Depend on the repository; the native sources come from git submodules, so use a local clone made
+with `git clone --recurse-submodules`:
+
 ```yaml
 dependencies:
-  voice_clone_tts: ^0.1.0
+  voice_clone_tts:
+    path: ../voice_clone_tts
 ```
 
 Building compiles qwentts.cpp and ggml from source:
