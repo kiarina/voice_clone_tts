@@ -31,3 +31,4 @@ README の手順で他の人が使える。Spirits Garden の試作に組み込�
 - **hook が出す同梱物を減らすと、Flutter（3.47.2）は前回アプリに写したファイルでなく、写す元のファイルを消そうとする**（2026-10-23、cudart を外した後の例題の Windows の build。`Flutter failed to delete file at "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.4\bin\x64\cudart64_13.dll"`）。
   権限が無くて消せず build が失敗した。`flutter clean` で直る。管理者の権限で build すると CUDA Toolkit の DLL が消えるおそれがある。上流への報告はオーナーと決める
 - Windows の開発機の checkout は、build で生まれた `example/pubspec.lock` の書き換えと生成物（`generated_plugin_registrant` など）で `git pull` が止まることがある。生成物なので戻して・消して pull する
+- `.pubignore` があるので、ルートの `.gitignore` は公開では読まれない。`.gitignore` を変えたら `.pubignore` にも同じ行を入れる（pcm_asr の 0.1.0 に `build/` が入った件と同じ落とし穴）
