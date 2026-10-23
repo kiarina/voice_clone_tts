@@ -99,8 +99,11 @@ class VoiceCloneTts {
     final talker = store.file(files[0]).path;
     final codec = store.file(files[1]).path;
     final device = support.device!;
-    final (address, error) = await Isolate.run(
-      () => _open(talker, codec, device, maxConcurrent),
+    final (address, error) = await _openOnIsolate(
+      talker,
+      codec,
+      device,
+      maxConcurrent,
     );
     if (address == 0) {
       throw VoiceCloneException(
@@ -137,7 +140,7 @@ class VoiceCloneTts {
     }
     final pcm = resampleTo24k(reference.samples, reference.sampleRate);
     final address = _engine.address;
-    final result = await Isolate.run(() => _extract(address, pcm));
+    final result = await _extractOnIsolate(address, pcm);
     if (result.error != null) {
       throw VoiceCloneException(
         VoiceCloneErrorCode.generateFailed,
@@ -562,6 +565,18 @@ String? qwenLanguage(String? language) {
 }
 
 // ── blocking native calls, run on a helper isolate ──────────────────────────
+
+// Isolate.run sends its closure's whole context, so each closure is made here, where the context holds only
+// sendable values (a closure inside a method would also carry `this` or the caller's callbacks).
+Future<(int, String)> _openOnIsolate(
+  String talker,
+  String codec,
+  String device,
+  int maxBatch,
+) => Isolate.run(() => _open(talker, codec, device, maxBatch));
+
+Future<_Extracted> _extractOnIsolate(int engine, Float32List pcm) =>
+    Isolate.run(() => _extract(engine, pcm));
 
 String? _bestGpu() {
   return using((arena) {
