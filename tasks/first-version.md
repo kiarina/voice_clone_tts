@@ -11,7 +11,9 @@ README の手順で他の人が使える。Spirits Garden の試作に組み込�
 
 ## 残り
 
-- [ ] Windows の配布: cudart・cuBLAS の DLL を code asset として bundle しているが、確かめたのは CUDA の PATH がある状態の `flutter test` だけ。例題アプリを release で build し、PATH の無い状態で起動して声が出るか
+- [x] Windows の配布で DLL が読めるか（2026-10-23、Spirits Garden の試作で）: release の build で `voice_clone_tts.dll` と cuBLAS・cudart の DLL が exe の隣に入り、PATH から CUDA を外して起動しても、プロセスは exe の隣の `cublas64_13.dll`・`cublasLt64_13.dll` を読んで CUDA で開いた。
+  cudart は ggml に静的に入っていて読まれないので、bundle から外せる（未対応）。声が出るところはアプリの側で確かめる
+- [ ] Windows の配布の大きさ: `cublasLt64_13.dll` だけで 490 MB。cudart を外す、重みと同じく後から取るなどを考える
 - [ ] 重みの実際の download（Hugging Face から 4.5 GB、`.part` からの再開、SHA-256 の不一致で消す）。Mac・Windows とも Hugging Face のキャッシュから置いて済ませた
 - [ ] 例題アプリ（`example/`）を Mac と Windows で動かす。参照の WAV と文字起こしを選んで話す。今は `--dart-define` で渡す仮の画面
 - [ ] 配る GPU の世代（`cuda_architectures`）を決める。既定は qwentts.cpp の広い一覧で、build が長い
