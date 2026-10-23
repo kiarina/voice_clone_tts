@@ -29,7 +29,10 @@ void main(List<String> args) async {
     final vct = root.resolve('src/');
     final arch = code.targetArchitecture.name;
     final buildDir = Directory.fromUri(
-      input.outputDirectoryShared.resolve('cmake-${os.name}-$arch/'),
+      input.outputDirectoryShared.resolve(
+        // Named after the generator: CMake refuses to reuse a build directory made by another one.
+        'cmake-${os.name}-$arch-${os == OS.windows ? 'ninja' : 'default'}/',
+      ),
     );
     await buildDir.create(recursive: true);
 
