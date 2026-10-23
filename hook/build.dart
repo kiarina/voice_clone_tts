@@ -43,8 +43,9 @@ void main(List<String> args) async {
       buildDir.path,
       '-DCMAKE_BUILD_TYPE=Release',
       '-DBUILD_SHARED_LIBS=OFF',
-      '-DCMAKE_PROJECT_qwentts-ggml_INCLUDE=${vct.resolve('vct.cmake').toFilePath()}',
-      '-DVCT_SOURCE_DIR=${vct.toFilePath()}',
+      // Forward slashes: CMake reads backslashes in these values as escapes.
+      '-DCMAKE_PROJECT_qwentts-ggml_INCLUDE=${_cmakePath(vct.resolve('vct.cmake'))}',
+      '-DVCT_SOURCE_DIR=${_cmakePath(vct)}',
       '-DGGML_NATIVE=OFF',
     ];
     final buildArgs = [
@@ -149,6 +150,8 @@ Iterable<File> _cudaRuntimeDlls(String cudaRoot) sync* {
     }
   }
 }
+
+String _cmakePath(Uri uri) => uri.toFilePath().replaceAll(r'\', '/');
 
 /// The latest Visual Studio installation (vswhere), whose developer environment provides cl, cmake and ninja.
 Future<String> _visualStudio() async {
