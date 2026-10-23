@@ -8,6 +8,7 @@
 //       voice_clone_tts:
 //         cuda_architectures: "86-real"   # CMAKE_CUDA_ARCHITECTURES (default: qwentts.cpp's list, slow to build)
 //         cmake: /path/to/cmake            # default: cmake on PATH (on Windows, the one in Visual Studio's developer environment)
+//         build_root: D:\b                 # Windows: where the CMake build directory goes (default: TEMP; kept short for nvcc)
 
 import 'dart:io';
 
@@ -28,12 +29,17 @@ void main(List<String> args) async {
     final source = root.resolve('third_party/qwentts.cpp/');
     final vct = root.resolve('src/');
     final arch = code.targetArchitecture.name;
-    final buildDir = Directory.fromUri(
-      input.outputDirectoryShared.resolve(
-        // Named after the generator: CMake refuses to reuse a build directory made by another one.
-        'cmake-${os.name}-$arch-${os == OS.windows ? 'ninja' : 'default'}/',
-      ),
-    );
+    // Named after the generator: CMake refuses to reuse a build directory made by another one.
+    final name =
+        'cmake-${os.name}-$arch-${os == OS.windows ? 'ninja' : 'default'}';
+    final buildDir = os == OS.windows
+        // nvcc cannot write past MAX_PATH (260), and the hook's output directory inside an app's .dart_tool is
+        // already about 200 characters deep: build in a short directory under TEMP, one per output directory.
+        ? Directory(
+            '${input.userDefines['build_root'] as String? ?? Directory.systemTemp.path}\\vct-'
+            '${_fnv(input.outputDirectoryShared.toFilePath())}-$name\\',
+          )
+        : Directory.fromUri(input.outputDirectoryShared.resolve('$name/'));
     await buildDir.create(recursive: true);
 
     final configure = <String>[
@@ -149,6 +155,15 @@ Iterable<File> _cudaRuntimeDlls(String cudaRoot) sync* {
         yield f;
     }
   }
+}
+
+/// A short, stable name for a path (FNV-1a, 32 bits).
+String _fnv(String s) {
+  var h = 0x811c9dc5;
+  for (final c in s.toLowerCase().codeUnits) {
+    h = ((h ^ c) * 0x01000193) & 0xffffffff;
+  }
+  return h.toRadixString(16).padLeft(8, '0');
 }
 
 String _cmakePath(Uri uri) => uri.toFilePath().replaceAll(r'\', '/');

@@ -46,6 +46,7 @@ GPU の無い body にも声を配る（Spirits Garden の `tasks/`）。kiapi �
 - qwentts.cpp は CMake の中で `CMAKE_SOURCE_DIR` を前提にしているので、`add_subdirectory` で取り込まず、その project に差し込む
 - Windows は Visual Studio の開発者環境（vswhere で探した vcvars64）の中で Ninja を使う。Visual Studio の生成方式では CMake が CUDA のコンパイラを見つけられなかった。
   hook には PATH などわずかな環境変数しか渡らないので、CUDA の世代（`cuda_architectures`）と cmake の場所はアプリの pubspec の `hooks.user_defines.voice_clone_tts` で渡す。CMake に渡すパスは前向きの斜線にする（円記号はエスケープとして読まれる）
+- Windows の CMake の作業フォルダは TEMP の下の短い名前（`vct-<出力先の hash>-cmake-…`、`build_root` で変えられる）に置く。nvcc は MAX_PATH（260 文字）を超えて書けず、アプリの `.dart_tool` の下の hook の出力先はそれだけで約 200 文字ある
 - 入れ子の submodule（qwentts.cpp の中の ggml）が要る。clone は `--recurse-submodules`
 - `src/vct.cpp` は qwentts.cpp の流しの callback（中のスレッドから呼ばれる）を受け、PCM を 16 bit にコピーして `NativeCallable.listener` に渡す。取り消しは要求ごとの atomic の旗を cancel の callback が見る
 
