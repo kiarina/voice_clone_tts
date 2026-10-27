@@ -77,6 +77,7 @@ class VoiceCloneTts {
     Directory? cacheDirectory,
     int maxConcurrent = 1,
     void Function(PrepareProgress progress)? onProgress,
+    PrepareCancel? cancel,
   }) async {
     final cache = cacheDirectory ?? await _defaultCache();
     final support = await VoiceCloneTts.support(
@@ -93,6 +94,7 @@ class VoiceCloneTts {
     await store.ensure(
       model,
       (f) => onProgress?.call(PrepareProgress(PreparePhase.download, f)),
+      cancel: cancel,
     );
     onProgress?.call(const PrepareProgress(PreparePhase.load, null));
     final files = weightFiles(model);

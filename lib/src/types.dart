@@ -273,6 +273,14 @@ class SpeechResult {
   final bool cancelled;
 }
 
+/// Stops [VoiceCloneTts.open] while it downloads the weights. The partial
+/// file is kept, so the next open resumes it.
+class PrepareCancel {
+  bool _cancelled = false;
+  bool get isCancelled => _cancelled;
+  void cancel() => _cancelled = true;
+}
+
 enum VoiceCloneErrorCode {
   unsupported,
   modelMissing,

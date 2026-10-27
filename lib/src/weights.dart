@@ -45,8 +45,9 @@ class WeightStore {
   /// Downloads the missing files, verifying size and SHA-256. Resumes a partial `.part` file.
   Future<void> ensure(
     VoiceCloneModel model,
-    void Function(double fraction)? onProgress,
-  ) async {
+    void Function(double fraction)? onProgress, {
+    PrepareCancel? cancel,
+  }) async {
     await directory.create(recursive: true);
     final files = weightFiles(model);
     final total = files.fold<int>(0, (a, w) => a + w.bytes);
@@ -58,12 +59,20 @@ class WeightStore {
         continue;
       }
       final base = done;
-      await _download(w, (got) => onProgress?.call((base + got) / total));
+      await _download(
+        w,
+        (got) => onProgress?.call((base + got) / total),
+        cancel,
+      );
       done += w.bytes;
     }
   }
 
-  Future<void> _download(WeightFile w, void Function(int got) progress) async {
+  Future<void> _download(
+    WeightFile w,
+    void Function(int got) progress,
+    PrepareCancel? cancel,
+  ) async {
     final part = File('${file(w).path}.part');
     final client = HttpClient();
     try {
@@ -90,12 +99,21 @@ class WeightStore {
           mode: have > 0 ? FileMode.append : FileMode.write,
         );
         var got = have;
-        await for (final chunk in response) {
-          sink.add(chunk);
-          got += chunk.length;
-          progress(got);
+        try {
+          await for (final chunk in response) {
+            if (cancel?.isCancelled ?? false) {
+              throw const VoiceCloneException(
+                VoiceCloneErrorCode.cancelled,
+                'download stopped; the next open resumes it',
+              );
+            }
+            sink.add(chunk);
+            got += chunk.length;
+            progress(got);
+          }
+        } finally {
+          await sink.close();
         }
-        await sink.close();
       }
       if (part.lengthSync() != w.bytes) {
         throw VoiceCloneException(

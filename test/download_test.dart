@@ -1,6 +1,6 @@
 // ignore_for_file: avoid_print
-// Downloads the weights from Hugging Face into an empty cache: a resumed partial file, a corrupt partial file, then
-// the whole model (about 4.5 GB). Skipped unless VCT_DOWNLOAD is set:
+// Downloads the weights from Hugging Face into an empty cache: a stopped download (keeps its partial file), a resumed
+// partial file, a corrupt partial file, then the whole model (about 4.5 GB). Skipped unless VCT_DOWNLOAD is set:
 //   VCT_DOWNLOAD=1 VCT_CACHE=<empty dir> flutter test test/download_test.dart
 import 'dart:io';
 
@@ -15,6 +15,39 @@ void main() {
   final skip = env['VCT_DOWNLOAD'] == null
       ? 'set VCT_DOWNLOAD=1 to download the weights'
       : null;
+
+  test(
+    'a stopped download keeps its partial file for the next one',
+    () async {
+      final cache = Directory('${env['VCT_CACHE']!}-stop')
+        ..createSync(recursive: true);
+      final store = WeightStore(cache);
+      final first = weightFiles(model)[0];
+      final part = File('${store.file(first).path}.part');
+      final cancel = PrepareCancel();
+      Object? stopped;
+      try {
+        await store.ensure(model, (f) {
+          if (part.existsSync() && part.lengthSync() > (16 << 20)) {
+            cancel.cancel();
+          }
+        }, cancel: cancel);
+      } catch (e) {
+        stopped = e;
+      }
+      expect(
+        (stopped as VoiceCloneException).code,
+        VoiceCloneErrorCode.cancelled,
+      );
+      final kept = part.lengthSync();
+      print('stopped with $kept bytes kept');
+      expect(kept, greaterThan(16 << 20));
+      expect(store.has(model), isFalse);
+      cache.deleteSync(recursive: true);
+    },
+    skip: skip,
+    timeout: const Timeout(Duration(minutes: 10)),
+  );
 
   test(
     'download, resume and verify',
@@ -54,7 +87,9 @@ void main() {
         final p = (f * 10).floor();
         if (p != last) {
           last = p;
-          print('${(f * 100).toStringAsFixed(0)}% at ${clock.elapsed.inSeconds} s');
+          print(
+            '${(f * 100).toStringAsFixed(0)}% at ${clock.elapsed.inSeconds} s',
+          );
         }
       });
       print('all weights in ${clock.elapsed.inSeconds} s');

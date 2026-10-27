@@ -64,7 +64,8 @@ toolkit. A macOS app in the App Sandbox needs the `com.apple.security.network.cl
 
 The model is downloaded from [Hugging Face](https://huggingface.co/Serveurperso/Qwen3-TTS-GGUF) (a fixed revision,
 verified by SHA-256, resumed if interrupted) into the app's support directory, or the `cacheDirectory` given to
-`open`. `VoiceCloneTts.support()` tells whether it is there yet, without downloading or loading anything.
+`open`. `VoiceCloneTts.support()` tells whether it is there yet, without downloading or loading anything. To stop a download midway (a pause), pass a `PrepareCancel` to `open` and call its `cancel()`; the partial file is
+kept and the next `open` resumes it.
 
 ## Performance
 
