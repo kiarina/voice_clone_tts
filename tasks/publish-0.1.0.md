@@ -13,6 +13,21 @@ The owner wants to publish it (2026-11-17). The earlier note that the owner had 
 4. Publish and check the package page (score, platforms, that the build hook fetches nothing missing from the archive).
 5. In Spirits Garden, switch the dependency to `voice_clone_tts: ^0.1.0`, build on macOS and Windows, and confirm the cloned voice still speaks. That change belongs to Spirits Garden's own tasks.
 
+## Progress
+
+- 2026-11-17 (MacBook Pro M1 Max, G-GEAR-2022): step 2 done (`ecdce79`): README installs `^0.1.0` and tells Windows
+  users to `flutter clean` if an upgrade fails with "failed to delete file"; pubspec has topics. CHANGELOG already
+  matches the code (including `open(cancel:)`). `flutter analyze` is clean.
+- Step 3: the dry-run (4 MB compressed, 2,496 files) leaves one warning that cannot be removed without changing the
+  qwentts.cpp submodule: 52 checked-in files ignored by a `.gitignore` (qwentts.cpp's `tests/*.log`, `examples/freeman.wav`,
+  ggml's `examples/mnist/web/`). They are left out of the archive, which is what we want; publish will ask to confirm it.
+- The archive alone builds and speaks: the files the dry-run lists were copied to a fresh folder (no `.dart_tool`, no
+  submodule git data) and `test/real_test.dart` was run from there. macOS (M1 Max, Metal): passed, RTF about 0.48,
+  cancel 11 ms. Windows (RTX 3080 Ti, CUDA 13.4, `cuda_architectures: "86-real"` added only to the copy): passed in
+  5 min including the build, RTF 0.17–0.24, first audio 24–29 ms, cancel 5 ms.
+- Next: step 1, show the owner the name, version, file list and size, and get approval. `publish_to: none` was already
+  removed on 2026-10-23 (`21d509c`), so nothing guards an accidental publish; only run `dart pub publish` after approval.
+
 ## Open points
 
 - Whether a Windows PC without an NVIDIA GPU gets `support()` saying it is unavailable (no such PC at hand; see `first-version.md`).
