@@ -32,3 +32,14 @@ The same will happen to every app on the first version upgrade: the pub cache pa
    macOS and Windows.
 3. Ship in the next release and note it in `CHANGELOG.md`. Until then, deleting the app's
    `.dart_tool/hooks_runner/shared/voice_clone_tts/build/` (or `flutter clean`) works around it.
+
+## Progress
+
+- 2026-11-17 (MacBook Pro M1 Max, G-GEAR-2022): fixed in `10a1293` by the second way (read `CMAKE_HOME_DIRECTORY`,
+  compare after resolving symlinks, delete the directory when it differs), so directories made by 0.1.0 are fixed too
+  and Windows does not pile up a TEMP directory per version. Checked with the example app: macOS, path A → B rebuilt
+  and passed, the same place through `/tmp` vs `/private/tmp` did not rebuild, and the old hook failed on the same
+  switch with "does not match the source". Windows (Release, `86-real`), A → B rebuilt the same
+  `vct-…-cmake-windows-x64-ninja` and passed, with `voice_clone_tts.dll` and the cuBLAS DLLs bundled.
+- Next: publish 0.1.1 after the owner approves, then Spirits Garden switches to `^0.1.1`
+  (`tasks/publish-0.1.0.md`, Left).
