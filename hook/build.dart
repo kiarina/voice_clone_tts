@@ -41,6 +41,12 @@ void main(List<String> args) async {
             '${_fnv(input.outputDirectoryShared.toFilePath())}-$name\\',
           )
         : Directory.fromUri(input.outputDirectoryShared.resolve('$name/'));
+    // The name does not carry where the package is, but CMake refuses a build directory made from another source
+    // (a path dependency before, or another version in the pub cache): start it over then.
+    final previous = _cachedSource(buildDir);
+    if (previous != null && !_sameSource(previous, _cmakePath(source))) {
+      await buildDir.delete(recursive: true);
+    }
     await buildDir.create(recursive: true);
 
     final configure = <String>[
@@ -152,8 +158,7 @@ Iterable<File> _cudaRuntimeDlls(String cudaRoot) sync* {
     for (final f in dir.listSync().whereType<File>()) {
       final name = f.uri.pathSegments.last.toLowerCase();
       // cudart is linked into ggml statically; only cuBLAS is loaded at run time.
-      if (name.startsWith('cublas64_') ||
-          name.startsWith('cublaslt64_')) {
+      if (name.startsWith('cublas64_') || name.startsWith('cublaslt64_')) {
         yield f;
       }
     }
@@ -170,6 +175,37 @@ String _fnv(String s) {
 }
 
 String _cmakePath(Uri uri) => uri.toFilePath().replaceAll(r'\', '/');
+
+/// The source directory an existing CMake build directory was configured from, or null when there is none yet.
+String? _cachedSource(Directory buildDir) {
+  final cache = File.fromUri(buildDir.uri.resolve('CMakeCache.txt'));
+  if (!cache.existsSync()) return null;
+  for (final line in cache.readAsLinesSync()) {
+    if (line.startsWith('CMAKE_HOME_DIRECTORY:')) {
+      return line.substring(line.indexOf('=') + 1);
+    }
+  }
+  return null;
+}
+
+bool _sameSource(String a, String b) {
+  String norm(String p) {
+    // Through symlinks (/tmp and /private/tmp on macOS), so the same place never counts as another.
+    var s = p;
+    try {
+      s = Directory(p).resolveSymbolicLinksSync();
+    } on FileSystemException {
+      // gone (an old version removed from the pub cache): compare as written
+    }
+    s = s.replaceAll(r'\', '/');
+    while (s.endsWith('/')) {
+      s = s.substring(0, s.length - 1);
+    }
+    return Platform.isWindows ? s.toLowerCase() : s;
+  }
+
+  return norm(a) == norm(b);
+}
 
 /// The latest Visual Studio installation (vswhere), whose developer environment provides cl, cmake and ninja.
 Future<String> _visualStudio() async {

@@ -1,3 +1,10 @@
+## 0.1.1
+
+- The build hook starts its CMake build directory over when the package's source has moved: switching from a path
+  dependency to pub.dev, or upgrading (the pub cache path carries the version), failed with "does not match the
+  source ... used to generate cache" until the app's build output was cleaned.
+- pubspec declares the supported platforms (macOS and Windows), so pub.dev no longer lists Android, iOS and Linux.
+
 ## 0.1.0
 
 First release.

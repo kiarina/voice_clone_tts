@@ -47,6 +47,7 @@ GPU の無い body にも声を配る（Spirits Garden の `tasks/`）。kiapi �
 - Windows は Visual Studio の開発者環境（vswhere で探した vcvars64）の中で Ninja を使う。Visual Studio の生成方式では CMake が CUDA のコンパイラを見つけられなかった。
   hook には PATH などわずかな環境変数しか渡らないので、CUDA の世代（`cuda_architectures`）と cmake の場所はアプリの pubspec の `hooks.user_defines.voice_clone_tts` で渡す。CMake に渡すパスは前向きの斜線にする（円記号はエスケープとして読まれる）
 - Windows の CMake の作業フォルダは TEMP の下の短い名前（`vct-<出力先の hash>-cmake-…`、`build_root` で変えられる）に置く。nvcc は MAX_PATH（260 文字）を超えて書けず、アプリの `.dart_tool` の下の hook の出力先はそれだけで約 200 文字ある
+- CMake の作業フォルダの名前はパッケージの置き場所を含まない。CMake は別のソースから作ったフォルダを使えないので、hook は `CMakeCache.txt` の `CMAKE_HOME_DIRECTORY` が今のソース（symlink を解いて比べる）と違えば、そのフォルダを消して作り直す。path の依存から pub.dev へ替えたときと、版を上げたとき（pub のキャッシュの場所に版が入る）に起きる。名前にハッシュを入れる形にしなかったのは、Windows の TEMP に版ごとのフォルダが溜まるのと、0.1.0 で作られたフォルダもそのまま直すため
 - 入れ子の submodule（qwentts.cpp の中の ggml）が要る。clone は `--recurse-submodules`
 - `src/vct.cpp` は qwentts.cpp の流しの callback（中のスレッドから呼ばれる）を受け、PCM を 16 bit にコピーして `NativeCallable.listener` に渡す。取り消しは要求ごとの atomic の旗を cancel の callback が見る
 
