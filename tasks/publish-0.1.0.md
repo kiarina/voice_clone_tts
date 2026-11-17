@@ -31,8 +31,14 @@ The owner wants to publish it (2026-11-17). The earlier note that the owner had 
 
 ## Left
 
-- [ ] Move the package to the publisher `kiarina.dev` (the owner does it on pub.dev; it is still under the uploader).
-- [ ] Spirits Garden: switch `projects/spirits/app/pubspec.yaml` from `path: ../../../../voice_clone_tts` to
+- [x] Moved to the publisher `kiarina.dev` (the owner, 2026-11-17; the API answers `kiarina.dev`).
+- [ ] Spirits Garden (blocked on `tasks/cmake-build-dir-source-change.md`: every checkout that built from the path
+  dependency fails at CMake configure after the switch, so the switch must wait for a fixed version). Tried on
+  2026-11-17 with the change uncommitted in the shared checkout: macOS, `probes/voice_route.dart` from a separate
+  worktree, first audio 94–110 ms, cancel 11–16 ms (as on 2026-10-24). Windows (G-GEAR), Release build passed and
+  bundled `voice_clone_tts.dll` and the cuBLAS DLLs, the engine loaded on CUDA0 and made the voice, but the probe's
+  3 s wait for the first audio ran out: the stg and prd apps already held 10.8 of the GPU's 12 GB, so it says nothing
+  about the package. Debug builds on Windows fail in speaker_aec (AEC3), unrelated. The step: switch `projects/spirits/app/pubspec.yaml` from `path: ../../../../voice_clone_tts` to
   `voice_clone_tts: ^0.1.0`, keep its `cuda_architectures` user define, `flutter clean` on Windows (the app once bundled
   cudart), build on macOS and Windows, and confirm the cloned voice speaks. Spirits Garden owns that change.
 
