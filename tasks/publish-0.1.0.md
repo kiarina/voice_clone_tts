@@ -39,4 +39,6 @@ The owner wants to publish it (2026-11-17). The earlier note that the owner had 
 ## Open points
 
 - Whether a Windows PC without an NVIDIA GPU gets `support()` saying it is unavailable (no such PC at hand; see `first-version.md`).
-- Flutter (3.47.2) tries to delete the source of a bundled file when a hook bundles fewer files (`first-version.md`, handover). Users may hit it after an upgrade that bundles fewer files; mention `flutter clean` in the README or report it upstream first.
+  The code catches a failed library load and returns `supported: false` with "native library unavailable" (`lib/src/engine.dart`).
+- Flutter (3.47.2) tries to delete the source of a bundled file when a hook bundles fewer files (`first-version.md`, handover).
+  The README tells users to `flutter clean`; the upstream report is tracked outside this repo.
