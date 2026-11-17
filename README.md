@@ -30,13 +30,9 @@ a WAV file.
 
 ## Getting started
 
-Not on pub.dev yet. Depend on the repository; the native sources come from git submodules, so use a local clone made
-with `git clone --recurse-submodules`:
-
 ```yaml
 dependencies:
-  voice_clone_tts:
-    path: ../voice_clone_tts
+  voice_clone_tts: ^0.1.0
 ```
 
 Building compiles qwentts.cpp and ggml from source:
@@ -60,7 +56,9 @@ hooks:
 ```
 
 The app bundles the cuBLAS DLLs from the CUDA Toolkit (about 550 MB), so users need only an NVIDIA driver, not the
-toolkit. A macOS app in the App Sandbox needs the `com.apple.security.network.client` entitlement for the download.
+toolkit. If a build after upgrading this package fails with `Flutter failed to delete file at "C:\Program Files\NVIDIA
+GPU Computing Toolkit\..."`, run `flutter clean` and build again (Flutter 3.47 tries to delete a DLL the package no
+longer bundles from where it was copied, not from the app). A macOS app in the App Sandbox needs the `com.apple.security.network.client` entitlement for the download.
 
 The model is downloaded from [Hugging Face](https://huggingface.co/Serveurperso/Qwen3-TTS-GGUF) (a fixed revision,
 verified by SHA-256, resumed if interrupted) into the app's support directory, or the `cacheDirectory` given to
