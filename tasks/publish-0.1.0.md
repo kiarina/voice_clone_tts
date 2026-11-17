@@ -25,8 +25,16 @@ The owner wants to publish it (2026-11-17). The earlier note that the owner had 
   submodule git data) and `test/real_test.dart` was run from there. macOS (M1 Max, Metal): passed, RTF about 0.48,
   cancel 11 ms. Windows (RTX 3080 Ti, CUDA 13.4, `cuda_architectures: "86-real"` added only to the copy): passed in
   5 min including the build, RTF 0.17–0.24, first audio 24–29 ms, cancel 5 ms.
-- Next: step 1, show the owner the name, version, file list and size, and get approval. `publish_to: none` was already
-  removed on 2026-10-23 (`21d509c`), so nothing guards an accidental publish; only run `dart pub publish` after approval.
+- Published 2026-11-17 after the owner approved the name, version, contents and the remaining warning
+  (https://pub.dev/packages/voice_clone_tts, tag `v0.1.0`). pub.dev analysis: 160/160. It lists Android, iOS and Linux
+  as platforms too, because the pubspec declares none; add `platforms: {macos:, windows:}` in the next version.
+
+## Left
+
+- [ ] Move the package to the publisher `kiarina.dev` (the owner does it on pub.dev; it is still under the uploader).
+- [ ] Spirits Garden: switch `projects/spirits/app/pubspec.yaml` from `path: ../../../../voice_clone_tts` to
+  `voice_clone_tts: ^0.1.0`, keep its `cuda_architectures` user define, `flutter clean` on Windows (the app once bundled
+  cudart), build on macOS and Windows, and confirm the cloned voice speaks. Spirits Garden owns that change.
 
 ## Open points
 
