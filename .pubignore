@@ -36,3 +36,4 @@ migrate_working_dir/
 # Working notes for this repo, not for users of the package
 /tasks/
 /AGENTS.md
+/tool/

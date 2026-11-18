@@ -38,7 +38,7 @@ pub.dev への公開は取り消せない（retract は 7 日以内、それ以�
 1. `pubspec.yaml` の version と `CHANGELOG.md` を上げ、`flutter analyze` を通す
 2. `dart pub publish --dry-run` で中身と警告を見る。`.pubignore` があると `.gitignore` は見られない（変えたら両方に）。
    qwentts.cpp の中の `.gitignore` で外れる commit 済みのファイル（テストのログ・例の WAV など）の警告は、submodule を変えずには消えず、公開物に入らないので残してよい
-3. 公開物だけで動くかを確かめる。dry-run が挙げるファイルだけを空の場所へ写し（`.dart_tool`・submodule の git 情報は無い状態）、
+3. 公開物だけで動くかを確かめる。dry-run が挙げるファイルだけを空の場所へ写し（`tool/dry_run_copy.py`。`.dart_tool`・submodule の git 情報は無い状態）、
    そこで `test/real_test.dart` を macOS と Windows で流す。hook が要るのに `.pubignore` で外したファイルは、公開してからでは直せない
 4. 名前・version・公開内容（大きさ・ファイル数・変わったもの）・残る警告・3 の結果をオーナーに示し、承認を得てから `dart pub publish`
 5. 公開した commit に注釈付きの tag `v<version>` を付けて push し、pub.dev の解析（点数・対応 OS の表示）を確かめる
